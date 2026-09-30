@@ -57,6 +57,16 @@ def excel_serial_to_iso(serial):
     return (EXCEL_EPOCH + dt.timedelta(days=int(serial))).strftime("%Y-%m-%d")
 
 
+def cell_to_iso_date(value):
+    """Return an ISO date string if `value` is a date/datetime or a legacy
+    Excel serial number, else None (e.g. a "9月汇总" summary-column label)."""
+    if isinstance(value, (dt.datetime, dt.date)):
+        return value.strftime("%Y-%m-%d")
+    if isinstance(value, (int, float)):
+        return excel_serial_to_iso(value)
+    return None
+
+
 def download_workbook(dest_path):
     if not SHARE_URL:
         raise RuntimeError("ONEDRIVE_URL environment variable is not set")
@@ -83,16 +93,26 @@ def parse_records(xlsx_path):
         if label in CHANNEL_MAP:
             row_for_channel[label] = r
 
-    # date columns from row 4, starting col B, until a non-numeric cell
+    # Date columns live in row 4 from column B onward, but the sheet now
+    # interleaves a "9月汇总" / "10月汇总" / ... text column after each
+    # month's days -- those must be SKIPPED, not treated as the end of the
+    # data (that was a real bug: it used to silently drop every month after
+    # the first summary column). We scan the full row and stop only after a
+    # run of genuinely empty cells (past the last real column, "12月汇总").
     date_cols = []  # list of (col_idx, iso_date)
     c = FIRST_DATE_COL
-    while True:
+    empty_run = 0
+    max_col = ws.max_column
+    while c <= max_col and empty_run <= 10:
         v = ws.cell(row=DATE_ROW, column=c).value
-        if v is None:
-            break
-        if not isinstance(v, (int, float)):
-            break  # e.g. "12月汇总" summary column
-        date_cols.append((c, excel_serial_to_iso(v)))
+        iso = cell_to_iso_date(v)
+        if iso is not None:
+            date_cols.append((c, iso))
+            empty_run = 0
+        elif v is None:
+            empty_run += 1
+        # else: a text summary column like "9月汇总" -- skip without counting
+        # it as empty, since real date columns still follow it.
         c += 1
 
     records = []
