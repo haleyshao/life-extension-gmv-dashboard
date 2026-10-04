@@ -153,10 +153,10 @@
   .legend .item{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--text-secondary);}
   .legend .swatch{width:10px;height:10px;border-radius:2px;flex:none;}
 
-  .mix-wrap{display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
+  .mix-wrap{display:flex;align-items:center;gap:30px;flex-wrap:wrap;}
   .donut-scroll{flex:none;}
   svg.donut{display:block;}
-  .mix-wrap .legend{margin:0;flex-direction:column;gap:7px;flex:1 1 260px;}
+  .mix-wrap .legend{margin:0;flex-direction:column;gap:7px;flex:0 1 auto;max-width:300px;min-width:220px;}
   .mix-wrap .legend .item{
     display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;
     gap:8px;font-size:.84rem;color:var(--text-secondary);width:100%;
@@ -164,10 +164,10 @@
   .mix-wrap .legend .item .mix-label{color:var(--text-primary);}
   .mix-wrap .legend .item .mix-value{
     text-align:right;font-weight:600;color:var(--text-primary);
-    font-variant-numeric:tabular-nums;min-width:86px;
+    font-variant-numeric:tabular-nums;min-width:76px;
   }
   .mix-wrap .legend .item .mix-pct{
-    text-align:right;color:var(--text-muted);font-variant-numeric:tabular-nums;min-width:44px;
+    text-align:right;color:var(--text-muted);font-variant-numeric:tabular-nums;min-width:42px;
   }
 
   .chart-controls{
@@ -209,15 +209,20 @@
   #tooltip .tt-row .val{font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-primary);}
   #tooltip .tt-total{border-top:1px solid var(--border);margin-top:4px;padding-top:4px;font-weight:700;}
 
-  table.detail{width:100%;border-collapse:collapse;font-size:.8rem;}
+  table.detail{width:100%;border-collapse:collapse;font-size:.8rem;table-layout:fixed;}
   table.detail th, table.detail td{
-    padding:7px 9px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;
-    font-variant-numeric:tabular-nums;
+    padding:7px 9px;border-bottom:1px solid var(--border);text-align:right;
+    font-variant-numeric:tabular-nums;overflow:hidden;
   }
-  table.detail th:first-child, table.detail td:first-child{text-align:left;font-variant-numeric:normal;}
+  table.detail td{white-space:nowrap;}
+  table.detail th{white-space:normal;word-break:break-word;line-height:1.25;vertical-align:bottom;}
+  table.detail th:first-child, table.detail td:first-child{
+    text-align:left;font-variant-numeric:normal;overflow:visible;
+  }
   table.detail thead th{
-    color:var(--text-muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;
-    font-weight:700;border-bottom:1px solid var(--border);
+    color:var(--brand-navy);font-size:.7rem;text-transform:uppercase;letter-spacing:.02em;
+    font-weight:700;border-bottom:2px solid var(--brand-navy);background:var(--accent-wash);
+    padding:8px 4px;
   }
   table.detail tbody tr:nth-child(even){background:rgba(0,0,0,.015);}
   table.detail tbody tr:hover{background:var(--accent-wash);}
@@ -343,10 +348,10 @@
   ];
 
   var SUBCHANNELS = [
-    {key:"tmall_flagship", label:"Tmall Flagship", group:"tmall"},
+    {key:"tmall_flagship", label:"Tmall FSS", group:"tmall"},
     {key:"tmall_alihealth", label:"AliHealth", group:"tmall"},
     {key:"tmall_tdi", label:"TDI", group:"tmall"},
-    {key:"jd_self", label:"JD Self-operated", group:"jd"},
+    {key:"jd_self", label:"JD DS", group:"jd"},
     {key:"jd_pop", label:"JD POP", group:"jd"},
     {key:"douyin", label:"Douyin", group:"douyin"},
     {key:"red", label:"RED", group:"red"},
@@ -892,6 +897,23 @@
 
     var table = document.getElementById("detailTable");
     table.innerHTML = "";
+
+    // Date and Total get proportionally wider columns; every channel column
+    // shares the remaining width equally (so headers like "Sub-dist. (B2B)"
+    // wrap onto two lines rather than stretching their column).
+    var colgroup = document.createElement("colgroup");
+    var DATE_COL_PCT = 15, TOTAL_COL_PCT = 10;
+    var chColPct = (100 - DATE_COL_PCT - TOTAL_COL_PCT) / SUBCHANNELS.length;
+    function addCol(pct){
+      var col = document.createElement("col");
+      col.style.width = pct + "%";
+      colgroup.appendChild(col);
+    }
+    addCol(DATE_COL_PCT);
+    SUBCHANNELS.forEach(function(){ addCol(chColPct); });
+    addCol(TOTAL_COL_PCT);
+    table.appendChild(colgroup);
+
     var thead = document.createElement("thead");
     var htr = document.createElement("tr");
     var headers = ["Date"].concat(SUBCHANNELS.map(function(sc){ return sc.label; })).concat(["Total"]);
