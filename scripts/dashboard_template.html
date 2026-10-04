@@ -19,6 +19,8 @@
     --g-vip:#e87ba4;
     --g-pdd:#008300;
     --g-b2b:#4a3aa7;
+    --trend-up:#1b9e6b;
+    --trend-down:#c7391f;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -40,6 +42,8 @@
       --g-vip:#d55181;
       --g-pdd:#008300;
       --g-b2b:#9085e9;
+      --trend-up:#33c08a;
+      --trend-down:#e2634b;
     }
   }
   :root[data-theme="dark"]{
@@ -61,6 +65,8 @@
     --g-vip:#d55181;
     --g-pdd:#008300;
     --g-b2b:#9085e9;
+    --trend-up:#33c08a;
+    --trend-down:#e2634b;
   }
 
   *{box-sizing:border-box;}
@@ -74,6 +80,8 @@
   .wrap{max-width:1080px;margin:0 auto;}
 
   header.top{margin-bottom:18px;}
+  .top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+  .top-left{min-width:0;}
   header.top .eyebrow{
     font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
     color:var(--accent);font-weight:700;margin-bottom:6px;
@@ -95,10 +103,12 @@
     background:var(--surface);border:1px solid var(--border);border-radius:10px;
   }
   .filters .group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .filters .group[hidden]{display:none;}
   .filters label{font-size:.76rem;color:var(--text-muted);margin-right:2px;}
+  .period-range{font-size:.84rem;color:var(--text-secondary);font-weight:600;}
   .seg{
     display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;
-    background:var(--surface-raise);
+    background:var(--surface-raise);flex:none;
   }
   .seg button{
     font:inherit;font-size:.84rem;padding:6px 14px;border:none;background:transparent;
@@ -120,6 +130,8 @@
   }
   .tile .k{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);font-weight:600;}
   .tile .v{font-size:1.5rem;font-weight:700;margin-top:4px;}
+  .tile .v.trend-up{color:var(--trend-up);}
+  .tile .v.trend-down{color:var(--trend-down);}
   .tile .d{font-size:.78rem;color:var(--text-secondary);margin-top:2px;}
 
   .card{
@@ -136,7 +148,7 @@
   .mix-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
   .donut-scroll{flex:none;}
   svg.donut{display:block;}
-  .mix-wrap .legend{margin:0;flex-direction:column;gap:8px;flex:1 1 200px;}
+  .mix-wrap .legend{margin:0;flex-direction:column;gap:8px;flex:1 1 220px;}
 
   .chart-controls{
     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;
@@ -159,6 +171,7 @@
   svg.chart{display:block;font-family:inherit;}
   .bar-seg{cursor:pointer;}
   .axis-label{fill:var(--text-muted);font-size:10px;}
+  .axis-label-sub{fill:var(--text-muted);font-size:9px;opacity:.75;}
   .grid-line{stroke:var(--border);stroke-width:1;}
   .baseline{stroke:var(--baseline);stroke-width:1;}
 
@@ -186,6 +199,7 @@
     color:var(--text-muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;
     font-weight:700;border-bottom:1px solid var(--border);
   }
+  table.detail tbody tr:nth-child(even){background:rgba(0,0,0,.015);}
   table.detail tbody tr:hover{background:var(--accent-wash);}
   table.detail tr.total-row td{font-weight:700;border-top:1px solid var(--border);background:var(--accent-wash);}
   .table-scroll{overflow-x:auto;}
@@ -196,10 +210,18 @@
 <div class="wrap">
 
   <header class="top">
-    <div class="eyebrow">Life Extension</div>
-    <h1>GMV Dashboard</h1>
-    <p class="subtitle">GMV trend and breakdown by channel. Data syncs automatically every hour from the ops reporting sheet.</p>
-    <span class="demo-badge" id="syncBadge">Syncing…</span>
+    <div class="top-row">
+      <div class="top-left">
+        <div class="eyebrow">Life Extension</div>
+        <h1>GMV Dashboard</h1>
+        <p class="subtitle">GMV trend and breakdown by channel. Data syncs automatically every hour from the ops reporting sheet.</p>
+        <span class="demo-badge" id="syncBadge">Syncing…</span>
+      </div>
+      <div class="seg" id="currencySeg" role="group" aria-label="Currency">
+        <button data-c="CNY" aria-pressed="true">CNY ¥</button>
+        <button data-c="USD" aria-pressed="false">USD $</button>
+      </div>
+    </div>
   </header>
 
   <div class="empty-state" id="emptyState" hidden>The ops team hasn't started reporting data yet. This page will update automatically once they do.</div>
@@ -209,11 +231,13 @@
       <label>Period</label>
       <select id="presetSel">
         <option value="yesterday">Yesterday</option>
+        <option value="lastWeek">Last Week</option>
         <option value="mtd">Month to Date</option>
         <option value="lastMonth">Last Month</option>
         <option value="ytd" selected>Year to Date</option>
         <option value="custom">Custom</option>
       </select>
+      <span class="period-range" id="periodRangeLabel"></span>
     </div>
     <div class="group" id="customRange" hidden>
       <input type="date" id="rangeStart">
@@ -234,9 +258,9 @@
       <div class="d">Average per day over the period</div>
     </div>
     <div class="tile">
-      <div class="k">Attainment Rate</div>
-      <div class="v" id="tileAttainment">—</div>
-      <div class="d">Target data not connected yet</div>
+      <div class="k">vs. Previous Period</div>
+      <div class="v" id="tileCompareValue">—</div>
+      <div class="d" id="tileCompareSub">—</div>
     </div>
   </div>
 
@@ -288,6 +312,7 @@
   "use strict";
 
   var MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var USD_RATE = 7.2; // fixed CNY-per-USD rate (placeholder until a live rate is wired in)
 
   var GROUPS = [
     {key:"tmall", label:"Tmall", color:"var(--g-tmall)"},
@@ -349,6 +374,7 @@
   }
   function parseDate(s){ var p = s.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
   function fmtDateEn(d){ return MONTH_ABBR[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); }
+  function fmtShortDate(d){ return (d.getMonth()+1) + "/" + d.getDate(); }
   function fmtRangeEn(a, b){
     if (fmtDate(a) === fmtDate(b)) return fmtDateEn(a);
     if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()){
@@ -356,20 +382,56 @@
     }
     return fmtDateEn(a) + " – " + fmtDateEn(b);
   }
-  function fmtCurrency(n){ return "¥" + Math.round(n).toLocaleString("en-US"); }
-  function fmtInt(n){ return Math.round(n).toLocaleString("en-US"); }
-  function fmtAxis(n){
-    if (n >= 1000) return "¥" + Math.round(n/1000) + "k";
-    return "¥" + Math.round(n);
-  }
   function daysInMonth(y, m){ return new Date(y, m+1, 0).getDate(); }
   function today(){ var d = new Date(); d.setHours(0,0,0,0); return d; }
+  function mondayOfWeek(d){
+    var dt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var day = (dt.getDay() + 6) % 7; // Mon=0
+    dt.setDate(dt.getDate() - day);
+    return dt;
+  }
+
+  // ================= CURRENCY =================
+  var currencyState = { code: "CNY" };
+  function currencySymbol(){ return currencyState.code === "USD" ? "$" : "¥"; }
+  function convertCurrency(n){ return currencyState.code === "USD" ? n / USD_RATE : n; }
+  function fmtMoney(n){ return currencySymbol() + Math.round(convertCurrency(n)).toLocaleString("en-US"); }
+  function fmtAxisMoney(n){
+    var v = convertCurrency(n);
+    if (Math.abs(v) >= 1000) return currencySymbol() + Math.round(v/1000) + "k";
+    return currencySymbol() + Math.round(v);
+  }
+
+  // ================= full-calendar helpers (never skip empty days) =================
+  function fullMonthRecords(y, m){
+    var lastDay = daysInMonth(y, m);
+    var t = today();
+    var cap = (y === t.getFullYear() && m === t.getMonth()) ? t.getDate() : lastDay;
+    var out = [];
+    for (var d = 1; d <= cap; d++){
+      var dt = new Date(y, m, d);
+      var rec = recordsByISO[fmtDate(dt)];
+      var row = {date: dt};
+      SUBCHANNELS.forEach(function(sc){ row[sc.key] = rec ? (rec[sc.key] || 0) : 0; });
+      out.push(row);
+    }
+    return out;
+  }
+  function fullYearRecords(y){
+    var t = today();
+    var lastMonth = (y === t.getFullYear()) ? t.getMonth() : 11;
+    var out = [];
+    for (var m = 0; m <= lastMonth; m++){
+      out = out.concat(fullMonthRecords(y, m));
+    }
+    return out;
+  }
 
   // ================= TOP PERIOD (tiles + channel mix) =================
   var topState = { preset: "ytd", rangeStart: null, rangeEnd: null };
 
   var PRESET_LABELS = {
-    yesterday: "Yesterday", mtd: "Month to Date", lastMonth: "Last Month",
+    yesterday: "Yesterday", lastWeek: "Last Week", mtd: "Month to Date", lastMonth: "Last Month",
     ytd: "Year to Date", custom: "Custom Range"
   };
 
@@ -381,6 +443,12 @@
     if (topState.preset === "yesterday"){
       var y = new Date(t); y.setDate(y.getDate()-1);
       return {start: y, end: y};
+    }
+    if (topState.preset === "lastWeek"){
+      var thisMonday = mondayOfWeek(t);
+      var lwStart = new Date(thisMonday); lwStart.setDate(lwStart.getDate()-7);
+      var lwEnd = new Date(thisMonday); lwEnd.setDate(lwEnd.getDate()-1);
+      return {start: lwStart, end: lwEnd};
     }
     if (topState.preset === "lastMonth"){
       var lmEnd = new Date(t.getFullYear(), t.getMonth(), 0);
@@ -394,8 +462,50 @@
     return {start: new Date(t.getFullYear(), t.getMonth(), 1), end: t};
   }
 
+  // calendar-aware "previous period" for the vs. Previous Period tile
+  function prevRangeFor(preset, range){
+    var s = range.start, e = range.end;
+    if (preset === "yesterday"){
+      var ps = new Date(s); ps.setDate(ps.getDate()-1);
+      return {start: ps, end: ps};
+    }
+    if (preset === "lastWeek"){
+      var ps2 = new Date(s); ps2.setDate(ps2.getDate()-7);
+      var pe2 = new Date(e); pe2.setDate(pe2.getDate()-7);
+      return {start: ps2, end: pe2};
+    }
+    if (preset === "mtd"){
+      var prevMonthLast = new Date(s.getFullYear(), s.getMonth(), 0);
+      var dayCount = e.getDate();
+      var ps3 = new Date(prevMonthLast.getFullYear(), prevMonthLast.getMonth(), 1);
+      var pe3 = new Date(prevMonthLast.getFullYear(), prevMonthLast.getMonth(), Math.min(dayCount, prevMonthLast.getDate()));
+      return {start: ps3, end: pe3};
+    }
+    if (preset === "lastMonth"){
+      var ps4 = new Date(s.getFullYear(), s.getMonth()-1, 1);
+      var pe4 = new Date(s.getFullYear(), s.getMonth(), 0);
+      return {start: ps4, end: pe4};
+    }
+    if (preset === "ytd"){
+      var ps5 = new Date(s.getFullYear()-1, s.getMonth(), s.getDate());
+      var pe5 = new Date(e.getFullYear()-1, e.getMonth(), e.getDate());
+      return {start: ps5, end: pe5};
+    }
+    // custom: immediately preceding period of equal length
+    var lengthDays = Math.round((e - s) / 86400000) + 1;
+    var pe6 = new Date(s); pe6.setDate(pe6.getDate()-1);
+    var ps6 = new Date(pe6); ps6.setDate(ps6.getDate()-(lengthDays-1));
+    return {start: ps6, end: pe6};
+  }
+
   function recordsInRange(start, end){
     return records.filter(function(r){ return r.date >= start && r.date <= end; });
+  }
+  function sumRange(start, end){
+    var recs = recordsInRange(start, end);
+    var total = 0;
+    recs.forEach(function(rec){ GROUPS.forEach(function(g){ total += groupValue(rec, g.key); }); });
+    return total;
   }
 
   function renderTiles(){
@@ -403,11 +513,26 @@
     var recs = recordsInRange(r.start, r.end);
     var grand = 0;
     recs.forEach(function(rec){ GROUPS.forEach(function(g){ grand += groupValue(rec, g.key); }); });
-    document.getElementById("tileTotal").textContent = fmtCurrency(grand);
+    document.getElementById("tileTotal").textContent = fmtMoney(grand);
     document.getElementById("tileTotalSub").textContent = fmtRangeEn(r.start, r.end);
+    document.getElementById("periodRangeLabel").textContent = fmtRangeEn(r.start, r.end);
     var days = Math.round((r.end - r.start) / 86400000) + 1;
-    document.getElementById("tileAvg").textContent = fmtCurrency(grand / Math.max(days, 1));
-    // Attainment Rate stays a placeholder until target data is wired in.
+    document.getElementById("tileAvg").textContent = fmtMoney(grand / Math.max(days, 1));
+
+    var pr = prevRangeFor(topState.preset, r);
+    var prevTotal = sumRange(pr.start, pr.end);
+    var valueEl = document.getElementById("tileCompareValue");
+    var subEl = document.getElementById("tileCompareSub");
+    if (prevTotal > 0){
+      var pct = (grand - prevTotal) / prevTotal * 100;
+      var sign = pct > 0 ? "+" : "";
+      valueEl.textContent = sign + pct.toFixed(1) + "%";
+      valueEl.className = "v" + (pct > 0 ? " trend-up" : pct < 0 ? " trend-down" : "");
+    } else {
+      valueEl.textContent = "—";
+      valueEl.className = "v";
+    }
+    subEl.textContent = "vs. " + fmtRangeEn(pr.start, pr.end);
   }
 
   var svgNS = "http://www.w3.org/2000/svg";
@@ -472,7 +597,7 @@
       sw2.style.background = item.g.color;
       row.appendChild(sw2);
       var txt = document.createElement("span");
-      txt.textContent = item.g.label + " · " + pct + "%";
+      txt.textContent = item.g.label + " · " + fmtMoney(item.v) + " · " + pct + "%";
       row.appendChild(txt);
       legendEl.appendChild(row);
     });
@@ -500,11 +625,9 @@
 
   function chartRangeRecords(){
     if (chartState.granularity === "month"){
-      var y = chartState.anchor.getFullYear();
-      return records.filter(function(r){ return r.date.getFullYear() === y; });
+      return fullYearRecords(chartState.anchor.getFullYear());
     }
-    var y2 = chartState.anchor.getFullYear(), m2 = chartState.anchor.getMonth();
-    return records.filter(function(r){ return r.date.getFullYear() === y2 && r.date.getMonth() === m2; });
+    return fullMonthRecords(chartState.anchor.getFullYear(), chartState.anchor.getMonth());
   }
 
   function bucketData(recs, gran){
@@ -523,13 +646,15 @@
       if (rec.date > bucket.last) bucket.last = rec.date;
       SUBCHANNELS.forEach(function(sc){ bucket.sub[sc.key] = (bucket.sub[sc.key]||0) + rec[sc.key]; });
     });
-    return order.map(function(k){
+    return order.map(function(k, idx){
       var b = map[k];
       if (gran === "week"){
+        var shortRange = fmtShortDate(b.first) + "–" + fmtShortDate(b.last);
         return {
-          label: MONTH_ABBR[b.first.getMonth()] + " " + b.first.getDate(),
+          label: "Week " + (idx + 1),
+          subLabel: shortRange,
           sub: b.sub,
-          dateRange: fmtDateEn(b.first) + " – " + fmtDateEn(b.last)
+          dateRange: "Week " + (idx + 1) + " · " + fmtDateEn(b.first) + " – " + fmtDateEn(b.last)
         };
       }
       return {
@@ -594,7 +719,7 @@
       row.appendChild(nameWrap);
       var val = document.createElement("span");
       val.className = "val";
-      val.textContent = fmtInt(r.v);
+      val.textContent = fmtMoney(r.v);
       row.appendChild(val);
       if (groupHighlight && groupHighlight !== r.g.key) row.style.opacity = "0.45";
       tooltip.appendChild(row);
@@ -606,7 +731,7 @@
     totalRow.appendChild(totalLabel);
     var totalVal = document.createElement("span");
     totalVal.className = "val";
-    totalVal.textContent = fmtInt(total);
+    totalVal.textContent = fmtMoney(total);
     totalRow.appendChild(totalVal);
     tooltip.appendChild(totalRow);
 
@@ -634,7 +759,8 @@
     var n = buckets.length;
     var plotW = Math.max(560, n * (barW + gap) + gap);
     var plotH = 260;
-    var marginLeft = 56, marginBottom = 26, marginTop = 10;
+    var isWeek = chartState.granularity === "week";
+    var marginLeft = 56, marginBottom = isWeek ? 38 : 26, marginTop = 10;
     var totalW = plotW + marginLeft + 12;
     var totalH = plotH + marginTop + marginBottom;
     svg.setAttribute("width", totalW);
@@ -658,7 +784,7 @@
         class: t2 === 0 ? "baseline" : "grid-line"
       }));
       var label = svgEl("text", {x: marginLeft - 8, y: y + 3, "text-anchor": "end", class: "axis-label"});
-      label.textContent = val === 0 ? "0" : fmtAxis(val);
+      label.textContent = val === 0 ? "0" : fmtAxisMoney(val);
       svg.appendChild(label);
     }
 
@@ -690,167 +816,14 @@
         var xl = svgEl("text", {x: x + barW/2, y: marginTop + plotH + 16, "text-anchor": "middle", class: "axis-label"});
         xl.textContent = b.label;
         svg.appendChild(xl);
+        if (isWeek && b.subLabel){
+          var xl2 = svgEl("text", {x: x + barW/2, y: marginTop + plotH + 29, "text-anchor": "middle", class: "axis-label-sub"});
+          xl2.textContent = b.subLabel;
+          svg.appendChild(xl2);
+        }
       }
     });
   }
 
   function updateNavLabel(){
-    var lbl = document.getElementById("navLabel");
-    if (chartState.granularity === "month"){
-      lbl.textContent = String(chartState.anchor.getFullYear());
-    } else {
-      lbl.textContent = MONTH_ABBR[chartState.anchor.getMonth()] + " " + chartState.anchor.getFullYear();
-    }
-    var t = today();
-    var atLatest;
-    if (chartState.granularity === "month"){
-      atLatest = chartState.anchor.getFullYear() >= t.getFullYear();
-    } else {
-      atLatest = (chartState.anchor.getFullYear() > t.getFullYear()) ||
-        (chartState.anchor.getFullYear() === t.getFullYear() && chartState.anchor.getMonth() >= t.getMonth());
-    }
-    document.getElementById("navNext").disabled = atLatest;
-  }
-
-  function renderTable(){
-    var y = chartState.anchor.getFullYear(), m = chartState.anchor.getMonth();
-    var lastDay = daysInMonth(y, m);
-    var t = today();
-    var cap = (y === t.getFullYear() && m === t.getMonth()) ? t.getDate() : lastDay;
-
-    var dayRows = [];
-    for (var d = 1; d <= cap; d++){
-      var dt = new Date(y, m, d);
-      var rec = recordsByISO[fmtDate(dt)];
-      var row = {date: dt};
-      SUBCHANNELS.forEach(function(sc){ row[sc.key] = rec ? (rec[sc.key] || 0) : 0; });
-      dayRows.push(row);
-    }
-
-    var monthTotals = {}; SUBCHANNELS.forEach(function(sc){ monthTotals[sc.key] = 0; });
-    dayRows.forEach(function(row){ SUBCHANNELS.forEach(function(sc){ monthTotals[sc.key] += row[sc.key]; }); });
-    var monthGrand = 0; SUBCHANNELS.forEach(function(sc){ monthGrand += monthTotals[sc.key]; });
-
-    var table = document.getElementById("detailTable");
-    table.innerHTML = "";
-    var thead = document.createElement("thead");
-    var htr = document.createElement("tr");
-    var headers = ["Date"].concat(SUBCHANNELS.map(function(sc){ return sc.label; })).concat(["Total"]);
-    headers.forEach(function(h){
-      var th = document.createElement("th");
-      th.textContent = h;
-      htr.appendChild(th);
-    });
-    thead.appendChild(htr);
-    table.appendChild(thead);
-
-    var tbody = document.createElement("tbody");
-
-    var trM = document.createElement("tr");
-    trM.className = "total-row";
-    var tdM0 = document.createElement("td");
-    tdM0.textContent = "MTD Total";
-    tdM0.style.textAlign = "left";
-    trM.appendChild(tdM0);
-    SUBCHANNELS.forEach(function(sc){
-      var td = document.createElement("td");
-      td.textContent = fmtInt(monthTotals[sc.key]);
-      trM.appendChild(td);
-    });
-    var tdMT = document.createElement("td");
-    tdMT.textContent = fmtInt(monthGrand);
-    trM.appendChild(tdMT);
-    tbody.appendChild(trM);
-
-    dayRows.slice().reverse().forEach(function(row){
-      var tr = document.createElement("tr");
-      var td0 = document.createElement("td");
-      td0.style.textAlign = "left";
-      td0.textContent = MONTH_ABBR[row.date.getMonth()] + " " + row.date.getDate();
-      if (fmtDate(row.date) === fmtDate(t)){
-        var badge = document.createElement("span");
-        badge.className = "badge-progress";
-        badge.textContent = "IN PROGRESS";
-        td0.appendChild(badge);
-      }
-      tr.appendChild(td0);
-      var rowTotal = 0;
-      SUBCHANNELS.forEach(function(sc){
-        var td = document.createElement("td");
-        td.textContent = fmtInt(row[sc.key]);
-        rowTotal += row[sc.key];
-        tr.appendChild(td);
-      });
-      var tdT = document.createElement("td");
-      tdT.textContent = fmtInt(rowTotal);
-      tr.appendChild(tdT);
-      tbody.appendChild(tr);
-    });
-
-    table.appendChild(tbody);
-  }
-
-  function renderChartSection(){
-    updateNavLabel();
-    renderChart();
-    renderTable();
-  }
-
-  // ---- wiring ----
-  var presetSel = document.getElementById("presetSel");
-  var customRange = document.getElementById("customRange");
-  var rangeStartInput = document.getElementById("rangeStart");
-  var rangeEndInput = document.getElementById("rangeEnd");
-  rangeEndInput.value = fmtDate(today());
-  var defaultStart = new Date(today()); defaultStart.setDate(defaultStart.getDate()-29);
-  rangeStartInput.value = fmtDate(defaultStart);
-
-  presetSel.addEventListener("change", function(){
-    topState.preset = presetSel.value;
-    customRange.hidden = topState.preset !== "custom";
-    if (topState.preset === "custom"){
-      topState.rangeStart = parseDate(rangeStartInput.value);
-      topState.rangeEnd = parseDate(rangeEndInput.value);
-    }
-    renderTop();
-  });
-  [rangeStartInput, rangeEndInput].forEach(function(inp){
-    inp.addEventListener("change", function(){
-      if (topState.preset !== "custom") return;
-      topState.rangeStart = parseDate(rangeStartInput.value);
-      topState.rangeEnd = parseDate(rangeEndInput.value);
-      renderTop();
-    });
-  });
-
-  document.getElementById("chartGranSeg").addEventListener("click", function(evt){
-    var btn = evt.target.closest("button");
-    if (!btn) return;
-    Array.prototype.forEach.call(this.querySelectorAll("button"), function(b){ b.setAttribute("aria-pressed", "false"); });
-    btn.setAttribute("aria-pressed", "true");
-    chartState.granularity = btn.getAttribute("data-g");
-    renderChartSection();
-  });
-  document.getElementById("navPrev").addEventListener("click", function(){
-    if (chartState.granularity === "month") chartState.anchor.setFullYear(chartState.anchor.getFullYear()-1);
-    else chartState.anchor.setMonth(chartState.anchor.getMonth()-1);
-    renderChartSection();
-  });
-  document.getElementById("navNext").addEventListener("click", function(){
-    if (this.disabled) return;
-    if (chartState.granularity === "month") chartState.anchor.setFullYear(chartState.anchor.getFullYear()+1);
-    else chartState.anchor.setMonth(chartState.anchor.getMonth()+1);
-    renderChartSection();
-  });
-
-  document.getElementById("syncBadge").textContent = "Last synced: " + (BUILD_META.generatedAt || "—");
-  document.getElementById("emptyState").hidden = HAS_DATA;
-  document.querySelectorAll(".data-dependent").forEach(function(el){
-    el.style.display = HAS_DATA ? "" : "none";
-  });
-
-  renderLegend();
-  renderTop();
-  renderChartSection();
-})();
-</script>
+    var lbl =
