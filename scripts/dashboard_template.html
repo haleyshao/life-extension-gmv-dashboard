@@ -826,4 +826,165 @@
   }
 
   function updateNavLabel(){
-    var lbl =
+    var lbl = document.getElementById("navLabel");
+    if (chartState.granularity === "month"){
+      lbl.textContent = String(chartState.anchor.getFullYear());
+    } else {
+      lbl.textContent = MONTH_ABBR[chartState.anchor.getMonth()] + " " + chartState.anchor.getFullYear();
+    }
+    var t = today();
+    var atLatest;
+    if (chartState.granularity === "month"){
+      atLatest = chartState.anchor.getFullYear() >= t.getFullYear();
+    } else {
+      atLatest = (chartState.anchor.getFullYear() > t.getFullYear()) ||
+        (chartState.anchor.getFullYear() === t.getFullYear() && chartState.anchor.getMonth() >= t.getMonth());
+    }
+    document.getElementById("navNext").disabled = atLatest;
+  }
+
+  function renderTable(){
+    var y = chartState.anchor.getFullYear(), m = chartState.anchor.getMonth();
+    var t = today();
+    var dayRows = fullMonthRecords(y, m);
+
+    var monthTotals = {}; SUBCHANNELS.forEach(function(sc){ monthTotals[sc.key] = 0; });
+    dayRows.forEach(function(row){ SUBCHANNELS.forEach(function(sc){ monthTotals[sc.key] += row[sc.key]; }); });
+    var monthGrand = 0; SUBCHANNELS.forEach(function(sc){ monthGrand += monthTotals[sc.key]; });
+
+    var table = document.getElementById("detailTable");
+    table.innerHTML = "";
+    var thead = document.createElement("thead");
+    var htr = document.createElement("tr");
+    var headers = ["Date"].concat(SUBCHANNELS.map(function(sc){ return sc.label; })).concat(["Total"]);
+    headers.forEach(function(h){
+      var th = document.createElement("th");
+      th.textContent = h;
+      htr.appendChild(th);
+    });
+    thead.appendChild(htr);
+    table.appendChild(thead);
+
+    var tbody = document.createElement("tbody");
+
+    var trM = document.createElement("tr");
+    trM.className = "total-row";
+    var tdM0 = document.createElement("td");
+    tdM0.textContent = "MTD Total";
+    tdM0.style.textAlign = "left";
+    trM.appendChild(tdM0);
+    SUBCHANNELS.forEach(function(sc){
+      var td = document.createElement("td");
+      td.textContent = fmtMoney(monthTotals[sc.key]);
+      trM.appendChild(td);
+    });
+    var tdMT = document.createElement("td");
+    tdMT.textContent = fmtMoney(monthGrand);
+    trM.appendChild(tdMT);
+    tbody.appendChild(trM);
+
+    dayRows.slice().reverse().forEach(function(row){
+      var tr = document.createElement("tr");
+      var td0 = document.createElement("td");
+      td0.style.textAlign = "left";
+      td0.textContent = MONTH_ABBR[row.date.getMonth()] + " " + row.date.getDate();
+      if (fmtDate(row.date) === fmtDate(t)){
+        var badge = document.createElement("span");
+        badge.className = "badge-progress";
+        badge.textContent = "IN PROGRESS";
+        td0.appendChild(badge);
+      }
+      tr.appendChild(td0);
+      var rowTotal = 0;
+      SUBCHANNELS.forEach(function(sc){
+        var td = document.createElement("td");
+        td.textContent = fmtMoney(row[sc.key]);
+        rowTotal += row[sc.key];
+        tr.appendChild(td);
+      });
+      var tdT = document.createElement("td");
+      tdT.textContent = fmtMoney(rowTotal);
+      tr.appendChild(tdT);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+  }
+
+  function renderChartSection(){
+    updateNavLabel();
+    renderChart();
+    renderTable();
+  }
+
+  function renderAll(){
+    renderTop();
+    renderChartSection();
+  }
+
+  // ---- wiring ----
+  var presetSel = document.getElementById("presetSel");
+  var customRange = document.getElementById("customRange");
+  var rangeStartInput = document.getElementById("rangeStart");
+  var rangeEndInput = document.getElementById("rangeEnd");
+  rangeEndInput.value = fmtDate(today());
+  var defaultStart = new Date(today()); defaultStart.setDate(defaultStart.getDate()-29);
+  rangeStartInput.value = fmtDate(defaultStart);
+
+  presetSel.addEventListener("change", function(){
+    topState.preset = presetSel.value;
+    customRange.hidden = topState.preset !== "custom";
+    if (topState.preset === "custom"){
+      topState.rangeStart = parseDate(rangeStartInput.value);
+      topState.rangeEnd = parseDate(rangeEndInput.value);
+    }
+    renderTop();
+  });
+  [rangeStartInput, rangeEndInput].forEach(function(inp){
+    inp.addEventListener("change", function(){
+      if (topState.preset !== "custom") return;
+      topState.rangeStart = parseDate(rangeStartInput.value);
+      topState.rangeEnd = parseDate(rangeEndInput.value);
+      renderTop();
+    });
+  });
+
+  document.getElementById("chartGranSeg").addEventListener("click", function(evt){
+    var btn = evt.target.closest("button");
+    if (!btn) return;
+    Array.prototype.forEach.call(this.querySelectorAll("button"), function(b){ b.setAttribute("aria-pressed", "false"); });
+    btn.setAttribute("aria-pressed", "true");
+    chartState.granularity = btn.getAttribute("data-g");
+    renderChartSection();
+  });
+  document.getElementById("navPrev").addEventListener("click", function(){
+    if (chartState.granularity === "month") chartState.anchor.setFullYear(chartState.anchor.getFullYear()-1);
+    else chartState.anchor.setMonth(chartState.anchor.getMonth()-1);
+    renderChartSection();
+  });
+  document.getElementById("navNext").addEventListener("click", function(){
+    if (this.disabled) return;
+    if (chartState.granularity === "month") chartState.anchor.setFullYear(chartState.anchor.getFullYear()+1);
+    else chartState.anchor.setMonth(chartState.anchor.getMonth()+1);
+    renderChartSection();
+  });
+
+  document.getElementById("currencySeg").addEventListener("click", function(evt){
+    var btn = evt.target.closest("button");
+    if (!btn) return;
+    Array.prototype.forEach.call(this.querySelectorAll("button"), function(b){ b.setAttribute("aria-pressed", "false"); });
+    btn.setAttribute("aria-pressed", "true");
+    currencyState.code = btn.getAttribute("data-c");
+    renderAll();
+  });
+
+  document.getElementById("syncBadge").textContent = "Last synced: " + (BUILD_META.generatedAt || "—");
+  document.getElementById("emptyState").hidden = HAS_DATA;
+  document.querySelectorAll(".data-dependent").forEach(function(el){
+    el.style.display = HAS_DATA ? "" : "none";
+  });
+
+  renderLegend();
+  renderAll();
+})();
+</script>
