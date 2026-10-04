@@ -1,4 +1,4 @@
-<title>Life Extension GMV 看板</title>
+<title>Life Extension GMV Dashboard</title>
 <style>
   :root{
     color-scheme: light;
@@ -67,7 +67,7 @@
   body{
     background:var(--bg-page);
     color:var(--text-primary);
-    font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     padding-inline:16px;
     padding-block:24px;
   }
@@ -133,6 +133,28 @@
   .legend .item{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--text-secondary);}
   .legend .swatch{width:10px;height:10px;border-radius:2px;flex:none;}
 
+  .mix-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+  .donut-scroll{flex:none;}
+  svg.donut{display:block;}
+  .mix-wrap .legend{margin:0;flex-direction:column;gap:8px;flex:1 1 200px;}
+
+  .chart-controls{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;
+    gap:10px;margin-bottom:10px;
+  }
+  .month-nav{display:flex;align-items:center;gap:8px;font-size:.86rem;color:var(--text-secondary);}
+  .month-nav button{
+    border:1px solid var(--border);background:var(--surface-raise);border-radius:6px;
+    width:26px;height:26px;cursor:pointer;color:var(--text-primary);font-size:.9rem;line-height:1;
+  }
+  .month-nav button:disabled{opacity:.35;cursor:not-allowed;}
+  .month-nav span{min-width:84px;text-align:center;font-weight:600;color:var(--text-primary);}
+
+  .badge-progress{
+    display:inline-block;font-size:.64rem;font-weight:700;letter-spacing:.03em;color:#fff;
+    background:var(--accent);border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle;
+  }
+
   .chart-scroll{overflow-x:auto;}
   svg.chart{display:block;font-family:inherit;}
   .bar-seg{cursor:pointer;}
@@ -154,18 +176,18 @@
   #tooltip .tt-row .val{font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-primary);}
   #tooltip .tt-total{border-top:1px solid var(--border);margin-top:4px;padding-top:4px;font-weight:700;}
 
-  table.detail{width:100%;border-collapse:collapse;font-size:.82rem;}
+  table.detail{width:100%;border-collapse:collapse;font-size:.8rem;}
   table.detail th, table.detail td{
-    padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;
+    padding:7px 9px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;
     font-variant-numeric:tabular-nums;
   }
   table.detail th:first-child, table.detail td:first-child{text-align:left;font-variant-numeric:normal;}
   table.detail thead th{
-    color:var(--text-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--text-muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;
     font-weight:700;border-bottom:1px solid var(--border);
   }
   table.detail tbody tr:hover{background:var(--accent-wash);}
-  table.detail tr.total-row td{font-weight:700;border-top:1px solid var(--border);}
+  table.detail tr.total-row td{font-weight:700;border-top:1px solid var(--border);background:var(--accent-wash);}
   .table-scroll{overflow-x:auto;}
 
   footer.note{color:var(--text-muted);font-size:.8rem;margin-top:6px;}
@@ -175,72 +197,86 @@
 
   <header class="top">
     <div class="eyebrow">Life Extension</div>
-    <h1>GMV 看板</h1>
-    <p class="subtitle">按渠道拆分的 GMV 走势与明细,支持日/周/月切换和自定义时间范围。数据每小时从运营填报表自动同步一次。</p>
-    <span class="demo-badge" id="syncBadge">同步中…</span>
+    <h1>GMV Dashboard</h1>
+    <p class="subtitle">GMV trend and breakdown by channel. Data syncs automatically every hour from the ops reporting sheet.</p>
+    <span class="demo-badge" id="syncBadge">Syncing…</span>
   </header>
 
-  <div class="empty-state" id="emptyState" hidden>运营团队暂未开始填报,数据同步后会在这里自动显示。</div>
+  <div class="empty-state" id="emptyState" hidden>The ops team hasn't started reporting data yet. This page will update automatically once they do.</div>
 
-  <div class="filters">
+  <div class="filters data-dependent" id="topFilters">
     <div class="group">
-      <label>粒度</label>
-      <div class="seg" id="granSeg" role="group" aria-label="时间粒度">
-        <button data-g="day" aria-pressed="true">日</button>
-        <button data-g="week" aria-pressed="false">周</button>
-        <button data-g="month" aria-pressed="false">月</button>
-      </div>
-    </div>
-    <div class="group">
-      <label>预设</label>
+      <label>Period</label>
       <select id="presetSel">
-        <option value="last14">最近 14 天</option>
-        <option value="last30" selected>最近 30 天</option>
-        <option value="last60">最近 60 天</option>
-        <option value="custom">自定义</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="mtd">Month to Date</option>
+        <option value="lastMonth">Last Month</option>
+        <option value="ytd" selected>Year to Date</option>
+        <option value="custom">Custom</option>
       </select>
     </div>
     <div class="group" id="customRange" hidden>
       <input type="date" id="rangeStart">
-      <span class="range-sep">至</span>
+      <span class="range-sep">to</span>
       <input type="date" id="rangeEnd">
     </div>
   </div>
 
-  <div class="tiles">
+  <div class="tiles data-dependent" id="tilesRow">
     <div class="tile">
-      <div class="k">所选区间 GMV 合计</div>
+      <div class="k">GMV</div>
       <div class="v" id="tileTotal">—</div>
       <div class="d" id="tileTotalSub">—</div>
     </div>
     <div class="tile">
-      <div class="k">日均 GMV</div>
+      <div class="k">Daily Avg GMV</div>
       <div class="v" id="tileAvg">—</div>
-      <div class="d">按所选区间天数平均</div>
+      <div class="d">Average per day over the period</div>
     </div>
     <div class="tile">
-      <div class="k">最大占比渠道</div>
-      <div class="v" id="tileTop">—</div>
-      <div class="d" id="tileTopSub">—</div>
+      <div class="k">Attainment Rate</div>
+      <div class="v" id="tileAttainment">—</div>
+      <div class="d">Target data not connected yet</div>
     </div>
   </div>
 
-  <section class="card">
-    <h2>GMV by 平台分组</h2>
-    <p class="card-sub">堆叠柱状图按天/周/月聚合;鼠标悬浮查看当期各渠道明细。</p>
+  <section class="card data-dependent" id="mixCard">
+    <h2>Channel Mix</h2>
+    <p class="card-sub" id="mixSub">Share of GMV by platform for the selected period.</p>
+    <div class="mix-wrap">
+      <div class="donut-scroll"><svg class="donut" id="donutSvg"></svg></div>
+      <div class="legend" id="mixLegend"></div>
+    </div>
+  </section>
+
+  <section class="card data-dependent" id="chartCard">
+    <h2>GMV by Platform</h2>
+    <p class="card-sub">Stacked bars by day, week, or month for the selected month. Hover a bar for the channel breakdown.</p>
+    <div class="chart-controls">
+      <div class="seg" id="chartGranSeg" role="group" aria-label="Chart granularity">
+        <button data-g="day" aria-pressed="true">Day</button>
+        <button data-g="week" aria-pressed="false">Week</button>
+        <button data-g="month" aria-pressed="false">Month</button>
+      </div>
+      <div class="month-nav">
+        <button id="navPrev" aria-label="Previous">‹</button>
+        <span id="navLabel">—</span>
+        <button id="navNext" aria-label="Next">›</button>
+      </div>
+    </div>
     <div class="legend" id="legend"></div>
     <div class="chart-scroll">
       <svg class="chart" id="chartSvg"></svg>
     </div>
   </section>
 
-  <section class="card">
-    <h2>渠道明细表</h2>
-    <p class="card-sub">按所选区间汇总的子渠道 GMV,和柱状图的平台分组对应。</p>
+  <section class="card data-dependent">
+    <h2>Channel Detail</h2>
+    <p class="card-sub">Daily GMV by channel for the selected month, with a month-to-date total at the top.</p>
     <div class="table-scroll">
       <table class="detail" id="detailTable"></table>
     </div>
-    <footer class="note" id="footerNote">数据来源:运营渠道数据填报表(每日填报 · GMV)。仅展示 GMV,不含净销售与目标数据。</footer>
+    <footer class="note" id="footerNote">Source: ops channel reporting sheet (daily entry · GMV). Shows GMV only — excludes net sales and target data.</footer>
   </section>
 
 </div>
@@ -251,27 +287,29 @@
 (function(){
   "use strict";
 
+  var MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
   var GROUPS = [
-    {key:"tmall", label:"天猫平台", color:"var(--g-tmall)"},
-    {key:"jd", label:"京东平台", color:"var(--g-jd)"},
-    {key:"douyin", label:"抖音", color:"var(--g-douyin)"},
-    {key:"red", label:"小红书", color:"var(--g-red)"},
-    {key:"vip", label:"唯品会", color:"var(--g-vip)"},
-    {key:"pdd", label:"拼多多", color:"var(--g-pdd)"},
-    {key:"b2b", label:"分销(B2B)", color:"var(--g-b2b)"}
+    {key:"tmall", label:"Tmall", color:"var(--g-tmall)"},
+    {key:"jd", label:"JD", color:"var(--g-jd)"},
+    {key:"douyin", label:"Douyin", color:"var(--g-douyin)"},
+    {key:"red", label:"RED", color:"var(--g-red)"},
+    {key:"vip", label:"VIP", color:"var(--g-vip)"},
+    {key:"pdd", label:"PDD", color:"var(--g-pdd)"},
+    {key:"b2b", label:"Sub-dist. (B2B)", color:"var(--g-b2b)"}
   ];
 
   var SUBCHANNELS = [
-    {key:"tmall_flagship", label:"天猫旗舰店", group:"tmall"},
+    {key:"tmall_flagship", label:"Tmall Flagship", group:"tmall"},
     {key:"tmall_alihealth", label:"AliHealth", group:"tmall"},
     {key:"tmall_tdi", label:"TDI", group:"tmall"},
-    {key:"jd_self", label:"京东自营", group:"jd"},
-    {key:"jd_pop", label:"京东POP", group:"jd"},
-    {key:"douyin", label:"抖音", group:"douyin"},
-    {key:"red", label:"小红书", group:"red"},
-    {key:"vip", label:"唯品会", group:"vip"},
-    {key:"pdd", label:"拼多多", group:"pdd"},
-    {key:"b2b", label:"分销", group:"b2b"}
+    {key:"jd_self", label:"JD Self-operated", group:"jd"},
+    {key:"jd_pop", label:"JD POP", group:"jd"},
+    {key:"douyin", label:"Douyin", group:"douyin"},
+    {key:"red", label:"RED", group:"red"},
+    {key:"vip", label:"VIP", group:"vip"},
+    {key:"pdd", label:"PDD", group:"pdd"},
+    {key:"b2b", label:"Sub-dist. (B2B)", group:"b2b"}
   ];
 
   // ---- real data, baked in at build time from the ops fill-in sheet ----
@@ -297,44 +335,160 @@
     records.push(rec0);
   }
 
+  var recordsByISO = {};
+  records.forEach(function(r){ recordsByISO[fmtDate(r.date)] = r; });
+
   function groupValue(rec, groupKey){
     var total = 0;
     SUBCHANNELS.forEach(function(sc){ if (sc.group === groupKey) total += rec[sc.key]; });
     return total;
   }
 
-  // ---- state ----
-  var state = {
-    granularity: "day",
-    preset: "last30",
-    rangeStart: null,
-    rangeEnd: null
-  };
-
   function fmtDate(d){
     return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
   }
   function parseDate(s){ var p = s.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
-  function fmtMoney(n){
-    if (n >= 10000) return "¥" + (n/10000).toFixed(1) + "万";
-    return "¥" + Math.round(n).toLocaleString("zh-CN");
-  }
-  function fmtInt(n){ return Math.round(n).toLocaleString("zh-CN"); }
-
-  function currentRange(){
-    if (state.preset === "custom" && state.rangeStart && state.rangeEnd){
-      return {start: state.rangeStart, end: state.rangeEnd};
+  function fmtDateEn(d){ return MONTH_ABBR[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); }
+  function fmtRangeEn(a, b){
+    if (fmtDate(a) === fmtDate(b)) return fmtDateEn(a);
+    if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()){
+      return MONTH_ABBR[a.getMonth()] + " " + a.getDate() + "–" + b.getDate() + ", " + a.getFullYear();
     }
-    var n = state.preset === "last14" ? 14 : state.preset === "last60" ? 60 : 30;
-    var end = records[records.length-1].date;
-    var start = new Date(end); start.setDate(start.getDate() - (n-1));
-    return {start: start, end: end};
+    return fmtDateEn(a) + " – " + fmtDateEn(b);
+  }
+  function fmtCurrency(n){ return "¥" + Math.round(n).toLocaleString("en-US"); }
+  function fmtInt(n){ return Math.round(n).toLocaleString("en-US"); }
+  function fmtAxis(n){
+    if (n >= 1000) return "¥" + Math.round(n/1000) + "k";
+    return "¥" + Math.round(n);
+  }
+  function daysInMonth(y, m){ return new Date(y, m+1, 0).getDate(); }
+  function today(){ var d = new Date(); d.setHours(0,0,0,0); return d; }
+
+  // ================= TOP PERIOD (tiles + channel mix) =================
+  var topState = { preset: "ytd", rangeStart: null, rangeEnd: null };
+
+  var PRESET_LABELS = {
+    yesterday: "Yesterday", mtd: "Month to Date", lastMonth: "Last Month",
+    ytd: "Year to Date", custom: "Custom Range"
+  };
+
+  function topRange(){
+    var t = today();
+    if (topState.preset === "custom" && topState.rangeStart && topState.rangeEnd){
+      return {start: topState.rangeStart, end: topState.rangeEnd};
+    }
+    if (topState.preset === "yesterday"){
+      var y = new Date(t); y.setDate(y.getDate()-1);
+      return {start: y, end: y};
+    }
+    if (topState.preset === "lastMonth"){
+      var lmEnd = new Date(t.getFullYear(), t.getMonth(), 0);
+      var lmStart = new Date(lmEnd.getFullYear(), lmEnd.getMonth(), 1);
+      return {start: lmStart, end: lmEnd};
+    }
+    if (topState.preset === "ytd"){
+      return {start: new Date(t.getFullYear(), 0, 1), end: t};
+    }
+    // mtd
+    return {start: new Date(t.getFullYear(), t.getMonth(), 1), end: t};
   }
 
-  function filteredRecords(){
-    var r = currentRange();
-    return records.filter(function(rec){ return rec.date >= r.start && rec.date <= r.end; });
+  function recordsInRange(start, end){
+    return records.filter(function(r){ return r.date >= start && r.date <= end; });
   }
+
+  function renderTiles(){
+    var r = topRange();
+    var recs = recordsInRange(r.start, r.end);
+    var grand = 0;
+    recs.forEach(function(rec){ GROUPS.forEach(function(g){ grand += groupValue(rec, g.key); }); });
+    document.getElementById("tileTotal").textContent = fmtCurrency(grand);
+    document.getElementById("tileTotalSub").textContent = fmtRangeEn(r.start, r.end);
+    var days = Math.round((r.end - r.start) / 86400000) + 1;
+    document.getElementById("tileAvg").textContent = fmtCurrency(grand / Math.max(days, 1));
+    // Attainment Rate stays a placeholder until target data is wired in.
+  }
+
+  var svgNS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs){
+    var el = document.createElementNS(svgNS, tag);
+    for (var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  function renderMix(){
+    var r = topRange();
+    var recs = recordsInRange(r.start, r.end);
+    var totals = {}; GROUPS.forEach(function(g){ totals[g.key] = 0; });
+    var grand = 0;
+    recs.forEach(function(rec){
+      GROUPS.forEach(function(g){ var v = groupValue(rec, g.key); totals[g.key] += v; grand += v; });
+    });
+
+    document.getElementById("mixSub").textContent =
+      "Share of GMV by platform — " + (PRESET_LABELS[topState.preset] || "") + ".";
+
+    var svg = document.getElementById("donutSvg");
+    svg.innerHTML = "";
+    var size = 180, cx = 90, cy = 90, rad = 64, sw = 28;
+    svg.setAttribute("viewBox", "0 0 " + size + " " + size);
+    svg.setAttribute("width", size);
+    svg.setAttribute("height", size);
+    var circumference = 2 * Math.PI * rad;
+
+    var sorted = GROUPS.map(function(g){ return {g: g, v: totals[g.key]}; })
+      .sort(function(a, b){ return b.v - a.v; });
+
+    if (grand <= 0){
+      svg.appendChild(svgEl("circle", {
+        cx: cx, cy: cy, r: rad, fill: "none", style: "stroke:var(--border);stroke-width:" + sw
+      }));
+    } else {
+      var cumulative = 0;
+      sorted.forEach(function(item){
+        if (item.v <= 0) return;
+        var frac = item.v / grand;
+        var dash = frac * circumference;
+        svg.appendChild(svgEl("circle", {
+          cx: cx, cy: cy, r: rad, fill: "none",
+          style: "stroke:" + item.g.color + ";stroke-width:" + sw,
+          "stroke-dasharray": dash + " " + (circumference - dash),
+          "stroke-dashoffset": -cumulative,
+          transform: "rotate(-90 " + cx + " " + cy + ")"
+        }));
+        cumulative += dash;
+      });
+    }
+
+    var legendEl = document.getElementById("mixLegend");
+    legendEl.innerHTML = "";
+    sorted.forEach(function(item){
+      var pct = grand > 0 ? (item.v / grand * 100).toFixed(1) : "0.0";
+      var row = document.createElement("span");
+      row.className = "item";
+      var sw2 = document.createElement("span");
+      sw2.className = "swatch";
+      sw2.style.background = item.g.color;
+      row.appendChild(sw2);
+      var txt = document.createElement("span");
+      txt.textContent = item.g.label + " · " + pct + "%";
+      row.appendChild(txt);
+      legendEl.appendChild(row);
+    });
+  }
+
+  function renderTop(){
+    renderTiles();
+    renderMix();
+  }
+
+  // ================= CHART + DETAIL TABLE (month-anchored) =================
+  var lastDate = records[records.length - 1].date;
+  var chartState = {
+    granularity: "day",
+    anchor: new Date(lastDate.getFullYear(), lastDate.getMonth(), 1)
+  };
 
   function isoWeekKey(d){
     var dt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -344,17 +498,26 @@
   }
   function monthKey(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0"); }
 
+  function chartRangeRecords(){
+    if (chartState.granularity === "month"){
+      var y = chartState.anchor.getFullYear();
+      return records.filter(function(r){ return r.date.getFullYear() === y; });
+    }
+    var y2 = chartState.anchor.getFullYear(), m2 = chartState.anchor.getMonth();
+    return records.filter(function(r){ return r.date.getFullYear() === y2 && r.date.getMonth() === m2; });
+  }
+
   function bucketData(recs, gran){
     if (gran === "day"){
       return recs.map(function(rec){
-        return {label: (rec.date.getMonth()+1) + "/" + rec.date.getDate(), sub: rec, dateRange: fmtDate(rec.date)};
+        return {label: String(rec.date.getDate()), sub: rec, dateRange: fmtDateEn(rec.date)};
       });
     }
     var keyFn = gran === "week" ? isoWeekKey : monthKey;
     var order = [], map = {};
     recs.forEach(function(rec){
       var k = keyFn(rec.date);
-      if (!map[k]){ map[k] = {label:null, sub:{date:rec.date}, first:rec.date, last:rec.date}; order.push(k); }
+      if (!map[k]){ map[k] = {sub:{date:rec.date}, first:rec.date, last:rec.date}; order.push(k); }
       var bucket = map[k];
       if (rec.date < bucket.first) bucket.first = rec.date;
       if (rec.date > bucket.last) bucket.last = rec.date;
@@ -362,22 +525,19 @@
     });
     return order.map(function(k){
       var b = map[k];
-      var label = gran === "week"
-        ? (b.first.getMonth()+1) + "/" + b.first.getDate()
-        : (b.first.getFullYear()) + "/" + (b.first.getMonth()+1);
-      var dateRange = gran === "week"
-        ? fmtDate(b.first) + " ~ " + fmtDate(b.last)
-        : fmtDate(b.first).slice(0,7);
-      return {label: label, sub: b.sub, dateRange: dateRange};
+      if (gran === "week"){
+        return {
+          label: MONTH_ABBR[b.first.getMonth()] + " " + b.first.getDate(),
+          sub: b.sub,
+          dateRange: fmtDateEn(b.first) + " – " + fmtDateEn(b.last)
+        };
+      }
+      return {
+        label: MONTH_ABBR[b.first.getMonth()],
+        sub: b.sub,
+        dateRange: MONTH_ABBR[b.first.getMonth()] + " " + b.first.getFullYear()
+      };
     });
-  }
-
-  // ---- rendering ----
-  var svgNS = "http://www.w3.org/2000/svg";
-  function svgEl(tag, attrs){
-    var el = document.createElementNS(svgNS, tag);
-    for (var k in attrs) el.setAttribute(k, attrs[k]);
-    return el;
   }
 
   function niceMax(v){
@@ -414,7 +574,6 @@
       total += v;
       return {g:g, v:v};
     });
-    var html = '<div class="tt-date"></div>';
     tooltip.innerHTML = "";
     var dateEl = document.createElement("div");
     dateEl.className = "tt-date";
@@ -443,7 +602,7 @@
     var totalRow = document.createElement("div");
     totalRow.className = "tt-row tt-total";
     var totalLabel = document.createElement("span");
-    totalLabel.textContent = "合计";
+    totalLabel.textContent = "Total";
     totalRow.appendChild(totalLabel);
     var totalVal = document.createElement("span");
     totalVal.className = "val";
@@ -466,11 +625,11 @@
   function hideTooltip(){ tooltip.classList.remove("show"); }
 
   function renderChart(){
-    var buckets = bucketData(filteredRecords(), state.granularity);
+    var buckets = bucketData(chartRangeRecords(), chartState.granularity);
     var svg = document.getElementById("chartSvg");
     svg.innerHTML = "";
 
-    var barW = state.granularity === "day" ? 18 : 34;
+    var barW = chartState.granularity === "day" ? 18 : 34;
     var gap = 10;
     var n = buckets.length;
     var plotW = Math.max(560, n * (barW + gap) + gap);
@@ -491,17 +650,22 @@
     var axisMax = niceMax(maxTotal * 1.08);
     var ticks = 4;
 
-    // gridlines + y labels
-    for (var t = 0; t <= ticks; t++){
-      var val = axisMax * t / ticks;
-      var y = marginTop + plotH - (plotH * t / ticks);
+    for (var t2 = 0; t2 <= ticks; t2++){
+      var val = axisMax * t2 / ticks;
+      var y = marginTop + plotH - (plotH * t2 / ticks);
       svg.appendChild(svgEl("line", {
         x1: marginLeft, x2: marginLeft + plotW, y1: y, y2: y,
-        class: t === 0 ? "baseline" : "grid-line"
+        class: t2 === 0 ? "baseline" : "grid-line"
       }));
       var label = svgEl("text", {x: marginLeft - 8, y: y + 3, "text-anchor": "end", class: "axis-label"});
-      label.textContent = val === 0 ? "0" : fmtMoney(val);
+      label.textContent = val === 0 ? "0" : fmtAxis(val);
       svg.appendChild(label);
+    }
+
+    if (buckets.length === 0){
+      var msg = svgEl("text", {x: marginLeft + plotW/2, y: marginTop + plotH/2, "text-anchor": "middle", class: "axis-label"});
+      msg.textContent = "No data for this period";
+      svg.appendChild(msg);
     }
 
     buckets.forEach(function(b, i){
@@ -530,45 +694,49 @@
     });
   }
 
-  function renderTiles(){
-    var recs = filteredRecords();
-    var groupTotals = {};
-    var grand = 0;
-    GROUPS.forEach(function(g){ groupTotals[g.key] = 0; });
-    recs.forEach(function(rec){
-      GROUPS.forEach(function(g){
-        var v = groupValue(rec, g.key);
-        groupTotals[g.key] += v;
-        grand += v;
-      });
-    });
-    document.getElementById("tileTotal").textContent = fmtMoney(grand);
-    var r = currentRange();
-    document.getElementById("tileTotalSub").textContent = fmtDate(r.start) + " ~ " + fmtDate(r.end);
-    document.getElementById("tileAvg").textContent = fmtMoney(grand / Math.max(recs.length,1));
-
-    var topKey = GROUPS[0].key;
-    GROUPS.forEach(function(g){ if (groupTotals[g.key] > groupTotals[topKey]) topKey = g.key; });
-    var topGroup = GROUPS.filter(function(g){ return g.key === topKey; })[0];
-    document.getElementById("tileTop").textContent = topGroup.label;
-    var pct = grand > 0 ? (groupTotals[topKey] / grand * 100).toFixed(1) : "0";
-    document.getElementById("tileTopSub").textContent = "占所选区间 GMV 的 " + pct + "%";
+  function updateNavLabel(){
+    var lbl = document.getElementById("navLabel");
+    if (chartState.granularity === "month"){
+      lbl.textContent = String(chartState.anchor.getFullYear());
+    } else {
+      lbl.textContent = MONTH_ABBR[chartState.anchor.getMonth()] + " " + chartState.anchor.getFullYear();
+    }
+    var t = today();
+    var atLatest;
+    if (chartState.granularity === "month"){
+      atLatest = chartState.anchor.getFullYear() >= t.getFullYear();
+    } else {
+      atLatest = (chartState.anchor.getFullYear() > t.getFullYear()) ||
+        (chartState.anchor.getFullYear() === t.getFullYear() && chartState.anchor.getMonth() >= t.getMonth());
+    }
+    document.getElementById("navNext").disabled = atLatest;
   }
 
   function renderTable(){
-    var recs = filteredRecords();
-    var totals = {};
-    SUBCHANNELS.forEach(function(sc){ totals[sc.key] = 0; });
-    recs.forEach(function(rec){
-      SUBCHANNELS.forEach(function(sc){ totals[sc.key] += rec[sc.key]; });
-    });
+    var y = chartState.anchor.getFullYear(), m = chartState.anchor.getMonth();
+    var lastDay = daysInMonth(y, m);
+    var t = today();
+    var cap = (y === t.getFullYear() && m === t.getMonth()) ? t.getDate() : lastDay;
+
+    var dayRows = [];
+    for (var d = 1; d <= cap; d++){
+      var dt = new Date(y, m, d);
+      var rec = recordsByISO[fmtDate(dt)];
+      var row = {date: dt};
+      SUBCHANNELS.forEach(function(sc){ row[sc.key] = rec ? (rec[sc.key] || 0) : 0; });
+      dayRows.push(row);
+    }
+
+    var monthTotals = {}; SUBCHANNELS.forEach(function(sc){ monthTotals[sc.key] = 0; });
+    dayRows.forEach(function(row){ SUBCHANNELS.forEach(function(sc){ monthTotals[sc.key] += row[sc.key]; }); });
+    var monthGrand = 0; SUBCHANNELS.forEach(function(sc){ monthGrand += monthTotals[sc.key]; });
 
     var table = document.getElementById("detailTable");
     table.innerHTML = "";
     var thead = document.createElement("thead");
     var htr = document.createElement("tr");
-    var hCells = ["渠道", "平台分组", "GMV 合计", "占比"];
-    hCells.forEach(function(h){
+    var headers = ["Date"].concat(SUBCHANNELS.map(function(sc){ return sc.label; })).concat(["Total"]);
+    headers.forEach(function(h){
       var th = document.createElement("th");
       th.textContent = h;
       htr.appendChild(th);
@@ -577,90 +745,112 @@
     table.appendChild(thead);
 
     var tbody = document.createElement("tbody");
-    var grand = 0;
-    SUBCHANNELS.forEach(function(sc){ grand += totals[sc.key]; });
 
+    var trM = document.createElement("tr");
+    trM.className = "total-row";
+    var tdM0 = document.createElement("td");
+    tdM0.textContent = "MTD Total";
+    tdM0.style.textAlign = "left";
+    trM.appendChild(tdM0);
     SUBCHANNELS.forEach(function(sc){
+      var td = document.createElement("td");
+      td.textContent = fmtInt(monthTotals[sc.key]);
+      trM.appendChild(td);
+    });
+    var tdMT = document.createElement("td");
+    tdMT.textContent = fmtInt(monthGrand);
+    trM.appendChild(tdMT);
+    tbody.appendChild(trM);
+
+    dayRows.slice().reverse().forEach(function(row){
       var tr = document.createElement("tr");
-      var tdName = document.createElement("td"); tdName.textContent = sc.label; tr.appendChild(tdName);
-      var grp = GROUPS.filter(function(g){ return g.key === sc.group; })[0];
-      var tdGroup = document.createElement("td");
-      var dotSpan = document.createElement("span");
-      dotSpan.style.display = "inline-block";
-      dotSpan.style.width = "8px"; dotSpan.style.height = "8px"; dotSpan.style.borderRadius = "2px";
-      dotSpan.style.background = grp.color; dotSpan.style.marginRight = "6px"; dotSpan.style.verticalAlign="middle";
-      tdGroup.appendChild(dotSpan);
-      var grpTxt = document.createElement("span"); grpTxt.textContent = grp.label;
-      tdGroup.appendChild(grpTxt);
-      tdGroup.style.textAlign = "left";
-      tr.appendChild(tdGroup);
-      var tdVal = document.createElement("td"); tdVal.textContent = fmtInt(totals[sc.key]); tr.appendChild(tdVal);
-      var tdPct = document.createElement("td");
-      tdPct.textContent = (grand > 0 ? (totals[sc.key]/grand*100).toFixed(1) : "0") + "%";
-      tr.appendChild(tdPct);
+      var td0 = document.createElement("td");
+      td0.style.textAlign = "left";
+      td0.textContent = MONTH_ABBR[row.date.getMonth()] + " " + row.date.getDate();
+      if (fmtDate(row.date) === fmtDate(t)){
+        var badge = document.createElement("span");
+        badge.className = "badge-progress";
+        badge.textContent = "IN PROGRESS";
+        td0.appendChild(badge);
+      }
+      tr.appendChild(td0);
+      var rowTotal = 0;
+      SUBCHANNELS.forEach(function(sc){
+        var td = document.createElement("td");
+        td.textContent = fmtInt(row[sc.key]);
+        rowTotal += row[sc.key];
+        tr.appendChild(td);
+      });
+      var tdT = document.createElement("td");
+      tdT.textContent = fmtInt(rowTotal);
+      tr.appendChild(tdT);
       tbody.appendChild(tr);
     });
-
-    var trTotal = document.createElement("tr");
-    trTotal.className = "total-row";
-    var tdT1 = document.createElement("td"); tdT1.textContent = "合计"; trTotal.appendChild(tdT1);
-    var tdT2 = document.createElement("td"); trTotal.appendChild(tdT2);
-    var tdT3 = document.createElement("td"); tdT3.textContent = fmtInt(grand); trTotal.appendChild(tdT3);
-    var tdT4 = document.createElement("td"); tdT4.textContent = "100%"; trTotal.appendChild(tdT4);
-    tbody.appendChild(trTotal);
 
     table.appendChild(tbody);
   }
 
-  function renderAll(){
-    renderTiles();
+  function renderChartSection(){
+    updateNavLabel();
     renderChart();
     renderTable();
   }
 
   // ---- wiring ----
-  document.getElementById("granSeg").addEventListener("click", function(evt){
-    var btn = evt.target.closest("button");
-    if (!btn) return;
-    Array.prototype.forEach.call(this.querySelectorAll("button"), function(b){ b.setAttribute("aria-pressed", "false"); });
-    btn.setAttribute("aria-pressed", "true");
-    state.granularity = btn.getAttribute("data-g");
-    renderAll();
-  });
-
   var presetSel = document.getElementById("presetSel");
   var customRange = document.getElementById("customRange");
   var rangeStartInput = document.getElementById("rangeStart");
   var rangeEndInput = document.getElementById("rangeEnd");
-  rangeEndInput.value = fmtDate(records[records.length-1].date);
-  var defaultStart = new Date(records[records.length-1].date); defaultStart.setDate(defaultStart.getDate()-29);
+  rangeEndInput.value = fmtDate(today());
+  var defaultStart = new Date(today()); defaultStart.setDate(defaultStart.getDate()-29);
   rangeStartInput.value = fmtDate(defaultStart);
 
   presetSel.addEventListener("change", function(){
-    state.preset = presetSel.value;
-    customRange.hidden = state.preset !== "custom";
-    if (state.preset === "custom"){
-      state.rangeStart = parseDate(rangeStartInput.value);
-      state.rangeEnd = parseDate(rangeEndInput.value);
+    topState.preset = presetSel.value;
+    customRange.hidden = topState.preset !== "custom";
+    if (topState.preset === "custom"){
+      topState.rangeStart = parseDate(rangeStartInput.value);
+      topState.rangeEnd = parseDate(rangeEndInput.value);
     }
-    renderAll();
+    renderTop();
   });
   [rangeStartInput, rangeEndInput].forEach(function(inp){
     inp.addEventListener("change", function(){
-      if (state.preset !== "custom") return;
-      state.rangeStart = parseDate(rangeStartInput.value);
-      state.rangeEnd = parseDate(rangeEndInput.value);
-      renderAll();
+      if (topState.preset !== "custom") return;
+      topState.rangeStart = parseDate(rangeStartInput.value);
+      topState.rangeEnd = parseDate(rangeEndInput.value);
+      renderTop();
     });
   });
 
-  document.getElementById("syncBadge").textContent = "最近同步:" + (BUILD_META.generatedAt || "—");
+  document.getElementById("chartGranSeg").addEventListener("click", function(evt){
+    var btn = evt.target.closest("button");
+    if (!btn) return;
+    Array.prototype.forEach.call(this.querySelectorAll("button"), function(b){ b.setAttribute("aria-pressed", "false"); });
+    btn.setAttribute("aria-pressed", "true");
+    chartState.granularity = btn.getAttribute("data-g");
+    renderChartSection();
+  });
+  document.getElementById("navPrev").addEventListener("click", function(){
+    if (chartState.granularity === "month") chartState.anchor.setFullYear(chartState.anchor.getFullYear()-1);
+    else chartState.anchor.setMonth(chartState.anchor.getMonth()-1);
+    renderChartSection();
+  });
+  document.getElementById("navNext").addEventListener("click", function(){
+    if (this.disabled) return;
+    if (chartState.granularity === "month") chartState.anchor.setFullYear(chartState.anchor.getFullYear()+1);
+    else chartState.anchor.setMonth(chartState.anchor.getMonth()+1);
+    renderChartSection();
+  });
+
+  document.getElementById("syncBadge").textContent = "Last synced: " + (BUILD_META.generatedAt || "—");
   document.getElementById("emptyState").hidden = HAS_DATA;
-  document.querySelector(".filters").style.display = HAS_DATA ? "" : "none";
-  document.querySelector(".tiles").style.display = HAS_DATA ? "" : "none";
-  document.querySelectorAll(".card").forEach(function(el){ el.style.display = HAS_DATA ? "" : "none"; });
+  document.querySelectorAll(".data-dependent").forEach(function(el){
+    el.style.display = HAS_DATA ? "" : "none";
+  });
 
   renderLegend();
-  renderAll();
+  renderTop();
+  renderChartSection();
 })();
 </script>
