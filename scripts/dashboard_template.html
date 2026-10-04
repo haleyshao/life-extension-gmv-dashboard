@@ -1,79 +1,87 @@
 <title>Life Extension GMV Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Zilla+Slab:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     color-scheme: light;
-    --bg-page:#f9f9f7;
-    --surface:#fcfcfb;
+    --bg-page:#f6f6f6;
+    --surface:#ffffff;
     --surface-raise:#ffffff;
-    --text-primary:#0b0b0b;
-    --text-secondary:#52514e;
-    --text-muted:#898781;
-    --border:#e1e0d9;
-    --baseline:#c3c2b7;
-    --accent:#2a78d6;
-    --accent-wash:#e8f0fb;
-    --g-tmall:#2a78d6;
-    --g-jd:#eb6834;
-    --g-douyin:#1baf7a;
-    --g-red:#eda100;
-    --g-vip:#e87ba4;
-    --g-pdd:#008300;
-    --g-b2b:#4a3aa7;
-    --trend-up:#1b9e6b;
-    --trend-down:#c7391f;
+    --text-primary:#1a1a1a;
+    --text-secondary:#444444;
+    --text-muted:#828282;
+    --border:#e7e7e7;
+    --baseline:#c5c5c5;
+    --brand-navy:#0e2d52;
+    --accent:#0b8290;
+    --accent-wash:#e6f6f7;
+    --g-tmall:#0e2d52;
+    --g-jd:#fa6100;
+    --g-douyin:#0b8290;
+    --g-red:#a41f35;
+    --g-vip:#6a86b8;
+    --g-pdd:#539800;
+    --g-b2b:#009dd5;
+    --trend-up:#539800;
+    --trend-down:#a41f35;
+    --font-display:"Zilla Slab",Georgia,serif;
+    --font-body:"Roboto",system-ui,-apple-system,"Segoe UI",sans-serif;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme: dark;
-      --bg-page:#0d0d0d;
-      --surface:#1a1a19;
-      --surface-raise:#212120;
-      --text-primary:#ffffff;
-      --text-secondary:#c3c2b7;
-      --text-muted:#898781;
-      --border:#2c2c2a;
-      --baseline:#383835;
-      --accent:#3987e5;
-      --accent-wash:#1c2733;
-      --g-tmall:#3987e5;
-      --g-jd:#d95926;
-      --g-douyin:#199e70;
-      --g-red:#c98500;
-      --g-vip:#d55181;
-      --g-pdd:#008300;
-      --g-b2b:#9085e9;
-      --trend-up:#33c08a;
-      --trend-down:#e2634b;
+      --bg-page:#101417;
+      --surface:#1a1f23;
+      --surface-raise:#20262a;
+      --text-primary:#f4f4f2;
+      --text-secondary:#c7c7c5;
+      --text-muted:#8d8d8b;
+      --border:#30363a;
+      --baseline:#3a4044;
+      --brand-navy:#5e86c4;
+      --accent:#3fc4d4;
+      --accent-wash:#14282c;
+      --g-tmall:#5e86c4;
+      --g-jd:#ff9a52;
+      --g-douyin:#3fc4d4;
+      --g-red:#e0657a;
+      --g-vip:#9db3dd;
+      --g-pdd:#8ec94a;
+      --g-b2b:#4fc1ea;
+      --trend-up:#8ec94a;
+      --trend-down:#e0657a;
     }
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
-    --bg-page:#0d0d0d;
-    --surface:#1a1a19;
-    --surface-raise:#212120;
-    --text-primary:#ffffff;
-    --text-secondary:#c3c2b7;
-    --text-muted:#898781;
-    --border:#2c2c2a;
-    --baseline:#383835;
-    --accent:#3987e5;
-    --accent-wash:#1c2733;
-    --g-tmall:#3987e5;
-    --g-jd:#d95926;
-    --g-douyin:#199e70;
-    --g-red:#c98500;
-    --g-vip:#d55181;
-    --g-pdd:#008300;
-    --g-b2b:#9085e9;
-    --trend-up:#33c08a;
-    --trend-down:#e2634b;
+    --bg-page:#101417;
+    --surface:#1a1f23;
+    --surface-raise:#20262a;
+    --text-primary:#f4f4f2;
+    --text-secondary:#c7c7c5;
+    --text-muted:#8d8d8b;
+    --border:#30363a;
+    --baseline:#3a4044;
+    --brand-navy:#5e86c4;
+    --accent:#3fc4d4;
+    --accent-wash:#14282c;
+    --g-tmall:#5e86c4;
+    --g-jd:#ff9a52;
+    --g-douyin:#3fc4d4;
+    --g-red:#e0657a;
+    --g-vip:#9db3dd;
+    --g-pdd:#8ec94a;
+    --g-b2b:#4fc1ea;
+    --trend-up:#8ec94a;
+    --trend-down:#e0657a;
   }
 
   *{box-sizing:border-box;}
   body{
     background:var(--bg-page);
     color:var(--text-primary);
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-family:var(--font-body);
     padding-inline:16px;
     padding-block:24px;
   }
@@ -86,7 +94,7 @@
     font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
     color:var(--accent);font-weight:700;margin-bottom:6px;
   }
-  h1{font-size:1.6rem;margin:0 0 4px;font-weight:700;text-wrap:balance;}
+  h1{font-family:var(--font-display);color:var(--brand-navy);font-size:1.7rem;margin:0 0 4px;font-weight:700;text-wrap:balance;}
   .subtitle{color:var(--text-secondary);font-size:.92rem;margin:0;max-width:60ch;}
   .demo-badge{
     display:inline-block;margin-top:10px;font-size:.76rem;color:var(--text-muted);
@@ -115,7 +123,7 @@
     color:var(--text-secondary);cursor:pointer;border-right:1px solid var(--border);
   }
   .seg button:last-child{border-right:none;}
-  .seg button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:600;}
+  .seg button[aria-pressed="true"]{background:var(--brand-navy);color:#fff;font-weight:600;}
   select, input[type="date"]{
     font:inherit;font-size:.84rem;padding:6px 10px;border:1px solid var(--border);
     border-radius:8px;background:var(--surface-raise);color:var(--text-primary);
@@ -138,17 +146,29 @@
     background:var(--surface);border:1px solid var(--border);border-radius:12px;
     padding:18px 18px 14px;margin-bottom:20px;
   }
-  .card h2{font-size:1.02rem;margin:0 0 2px;font-weight:700;}
+  .card h2{font-family:var(--font-display);color:var(--brand-navy);font-size:1.12rem;margin:0 0 2px;font-weight:700;}
   .card .card-sub{font-size:.82rem;color:var(--text-secondary);margin:0 0 12px;}
 
   .legend{display:flex;flex-wrap:wrap;gap:12px;margin:2px 0 14px;}
   .legend .item{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--text-secondary);}
   .legend .swatch{width:10px;height:10px;border-radius:2px;flex:none;}
 
-  .mix-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+  .mix-wrap{display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
   .donut-scroll{flex:none;}
   svg.donut{display:block;}
-  .mix-wrap .legend{margin:0;flex-direction:column;gap:8px;flex:1 1 220px;}
+  .mix-wrap .legend{margin:0;flex-direction:column;gap:7px;flex:1 1 260px;}
+  .mix-wrap .legend .item{
+    display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;
+    gap:8px;font-size:.84rem;color:var(--text-secondary);width:100%;
+  }
+  .mix-wrap .legend .item .mix-label{color:var(--text-primary);}
+  .mix-wrap .legend .item .mix-value{
+    text-align:right;font-weight:600;color:var(--text-primary);
+    font-variant-numeric:tabular-nums;min-width:86px;
+  }
+  .mix-wrap .legend .item .mix-pct{
+    text-align:right;color:var(--text-muted);font-variant-numeric:tabular-nums;min-width:44px;
+  }
 
   .chart-controls{
     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;
@@ -164,7 +184,7 @@
 
   .badge-progress{
     display:inline-block;font-size:.64rem;font-weight:700;letter-spacing:.03em;color:#fff;
-    background:var(--accent);border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle;
+    background:var(--brand-navy);border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle;
   }
 
   .chart-scroll{overflow-x:auto;}
@@ -204,7 +224,6 @@
   table.detail tr.total-row td{font-weight:700;border-top:1px solid var(--border);background:var(--accent-wash);}
   .table-scroll{overflow-x:auto;}
 
-  footer.note{color:var(--text-muted);font-size:.8rem;margin-top:6px;}
 </style>
 
 <div class="wrap">
@@ -214,7 +233,7 @@
       <div class="top-left">
         <div class="eyebrow">Life Extension</div>
         <h1>GMV Dashboard</h1>
-        <p class="subtitle">GMV trend and breakdown by channel. Data syncs automatically every hour from the ops reporting sheet.</p>
+        <p class="subtitle">GMV trend and breakdown by channel. Updated daily with GMV data through the previous day.</p>
         <span class="demo-badge" id="syncBadge">Syncing…</span>
       </div>
       <div class="seg" id="currencySeg" role="group" aria-label="Currency">
@@ -300,7 +319,6 @@
     <div class="table-scroll">
       <table class="detail" id="detailTable"></table>
     </div>
-    <footer class="note" id="footerNote">Source: ops channel reporting sheet (daily entry · GMV). Shows GMV only — excludes net sales and target data.</footer>
   </section>
 
 </div>
@@ -419,9 +437,11 @@
   }
   function fullYearRecords(y){
     var t = today();
+    var firstRec = records[0].date;
     var lastMonth = (y === t.getFullYear()) ? t.getMonth() : 11;
+    var startMonth = (y === firstRec.getFullYear()) ? firstRec.getMonth() : 0;
     var out = [];
-    for (var m = 0; m <= lastMonth; m++){
+    for (var m = startMonth; m <= lastMonth; m++){
       out = out.concat(fullMonthRecords(y, m));
     }
     return out;
@@ -596,9 +616,18 @@
       sw2.className = "swatch";
       sw2.style.background = item.g.color;
       row.appendChild(sw2);
-      var txt = document.createElement("span");
-      txt.textContent = item.g.label + " · " + fmtMoney(item.v) + " · " + pct + "%";
-      row.appendChild(txt);
+      var label = document.createElement("span");
+      label.className = "mix-label";
+      label.textContent = item.g.label;
+      row.appendChild(label);
+      var val = document.createElement("span");
+      val.className = "mix-value";
+      val.textContent = fmtMoney(item.v);
+      row.appendChild(val);
+      var pctEl = document.createElement("span");
+      pctEl.className = "mix-pct";
+      pctEl.textContent = pct + "%";
+      row.appendChild(pctEl);
       legendEl.appendChild(row);
     });
   }
@@ -754,13 +783,24 @@
     var svg = document.getElementById("chartSvg");
     svg.innerHTML = "";
 
-    var barW = chartState.granularity === "day" ? 18 : 34;
-    var gap = 10;
-    var n = buckets.length;
-    var plotW = Math.max(560, n * (barW + gap) + gap);
-    var plotH = 260;
+    var scrollEl = svg.parentElement;
+    var containerW = (scrollEl && scrollEl.clientWidth) || 900;
     var isWeek = chartState.granularity === "week";
     var marginLeft = 56, marginBottom = isWeek ? 38 : 26, marginTop = 10;
+    var n = buckets.length;
+    var availableW = Math.max(containerW - marginLeft - 12, 200);
+
+    var barW, gap;
+    if (chartState.granularity === "day"){
+      barW = 18; gap = 10;
+    } else {
+      // week / month views: stretch bars to fill the full card width instead of
+      // bunching at the left when there are only a handful of bars to show.
+      gap = Math.max(16, Math.min(44, Math.floor(availableW / Math.max(n, 1) * 0.22)));
+      barW = Math.max(40, Math.min(220, Math.floor((availableW - gap * (n + 1)) / Math.max(n, 1))));
+    }
+    var plotW = Math.max(availableW, n * (barW + gap) + gap);
+    var plotH = 260;
     var totalW = plotW + marginLeft + 12;
     var totalH = plotH + marginTop + marginBottom;
     svg.setAttribute("width", totalW);
@@ -812,15 +852,13 @@
         svg.appendChild(rect);
         yCursor = yTop;
       });
-      if (i % Math.ceil(n / 16 || 1) === 0 || n <= 16){
-        var xl = svgEl("text", {x: x + barW/2, y: marginTop + plotH + 16, "text-anchor": "middle", class: "axis-label"});
-        xl.textContent = b.label;
-        svg.appendChild(xl);
-        if (isWeek && b.subLabel){
-          var xl2 = svgEl("text", {x: x + barW/2, y: marginTop + plotH + 29, "text-anchor": "middle", class: "axis-label-sub"});
-          xl2.textContent = b.subLabel;
-          svg.appendChild(xl2);
-        }
+      var xl = svgEl("text", {x: x + barW/2, y: marginTop + plotH + 16, "text-anchor": "middle", class: "axis-label"});
+      xl.textContent = b.label;
+      svg.appendChild(xl);
+      if (isWeek && b.subLabel){
+        var xl2 = svgEl("text", {x: x + barW/2, y: marginTop + plotH + 29, "text-anchor": "middle", class: "axis-label-sub"});
+        xl2.textContent = b.subLabel;
+        svg.appendChild(xl2);
       }
     });
   }
