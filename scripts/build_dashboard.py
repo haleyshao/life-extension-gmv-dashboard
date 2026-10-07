@@ -144,7 +144,9 @@ def inject(template_path, out_path, records):
     if marker not in html:
         raise RuntimeError("template marker not found -- did the template change?")
 
-    generated_at = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+    # GitHub Actions runs in UTC -- stamp the page in Beijing time (UTC+8).
+    bj = dt.timezone(dt.timedelta(hours=8))
+    generated_at = dt.datetime.now(bj).strftime("%Y-%m-%d %H:%M") + " (Beijing time)"
     meta = {
         "generatedAt": generated_at,
         "sourceNote": "运营渠道数据填报表 · 每日填报 · GMV",
