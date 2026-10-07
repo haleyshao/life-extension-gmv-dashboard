@@ -36,6 +36,37 @@ jobs:
           mkdir -p site
           python3 scripts/build_dashboard.py scripts/dashboard_template.html site/index.html
 
+      - name: Set up Node (for page encryption)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Password-protect the page
+        env:
+          # Set this under Settings -> Secrets and variables -> Actions
+          STATICRYPT_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+        run: |
+          if [ -z "$STATICRYPT_PASSWORD" ]; then
+            echo "::error::Secret DASHBOARD_PASSWORD is not set - refusing to publish an unprotected page"
+            exit 1
+          fi
+          if [ "${#STATICRYPT_PASSWORD}" -lt 10 ]; then
+            echo "::error::DASHBOARD_PASSWORD must be at least 10 characters"
+            exit 1
+          fi
+          # The salt is not secret; keeping it fixed means "remember me" keeps
+          # working across the hourly rebuilds.
+          npx --yes staticrypt@3 site/index.html -d site \
+            --salt 5c1f0b7a93d24e68a7b3c9d1e4f60a82 --remember 7 --short \
+            --template-title "Life Extension GMV Dashboard" \
+            --template-instructions "Confidential - please enter the access password to view the dashboard." \
+            --template-placeholder "Password" \
+            --template-button "Open dashboard" \
+            --template-remember "Remember me for 7 days" \
+            --template-error "Incorrect password, please try again." \
+            --template-color-primary "#0e2d52" \
+            --template-color-secondary "#e4e9ee"
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
