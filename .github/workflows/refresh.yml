@@ -2,7 +2,9 @@ name: Refresh GMV dashboard
 
 on:
   schedule:
-    - cron: "0 * * * *"   # every hour, on the hour (UTC)
+    # GitHub cron runs in UTC. Beijing time = UTC+8:
+    - cron: "30 2 * * *"   # 10:30 Beijing time
+    - cron: "0 10 * * *"   # 18:00 Beijing time
   workflow_dispatch: {}    # lets you click "Run workflow" manually to test
 
 permissions:
@@ -55,7 +57,7 @@ jobs:
             exit 1
           fi
           # The salt is not secret; keeping it fixed means "remember me" keeps
-          # working across the hourly rebuilds.
+          # working across the twice-daily rebuilds.
           npx --yes staticrypt@3 site/index.html -d site \
             --salt 5c1f0b7a93d24e68a7b3c9d1e4f60a82 --remember 7 --short \
             --template-title "Life Extension GMV Dashboard" \
